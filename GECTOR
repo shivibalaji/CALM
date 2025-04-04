@@ -1,0 +1,429 @@
+# Define the input and output file paths
+input_file_path = '/content/drive/MyDrive/GECTOR/lang8/lang-8-20111007-2.0/lang-8-20111007-L1-v2.dat'
+output_file_path = '/content/drive/MyDrive/GECTOR/lang8/lang-8-20111007-2.0/lang-8-20111007-L1-v2.src'
+
+# Step 1: Read the .DAT file
+with open(input_file_path, 'r') as dat_file:
+    dat_content = dat_file.readlines()
+
+# Step 2: Process the data
+# For example, let's assume we need to convert each line to uppercase
+processed_content = [line.upper() for line in dat_content]
+
+# Step 3: Write to the .SRC file
+with open(output_file_path, 'w') as src_file:
+    src_file.writelines(processed_content)
+
+print(f"Conversion complete. The data has been saved to {output_file_path}")
+
+# Clone the GECToR repository from GitHub
+!git clone https://github.com/gotutiyan/gector.git
+
+# Change the directory to gector
+%cd gector
+
+# Install required packages from requirements.txt
+!pip install -r requirements.txt
+
+# Install additional required packages
+!pip install transformers torch
+
+!git clone https://github.com/grammarly/gector.git
+%cd /content/gector1
+!git clone https://github.com/cofe-ai/fast-gector.git
+%cd /content/fastgector
+
+# Install required packages
+!pip install transformers
+
+# Import necessary libraries
+from transformers import AutoTokenizer
+from gector.gector.modeling import GECToR
+from gector.gector.predict import predict, load_verb_dict
+import torch
+
+#Symspell: not used in Final model pipeline.
+
+[ ]
+!pip install -U symspellpy
+Collecting symspellpy
+  Downloading symspellpy-6.7.8-py3-none-any.whl.metadata (3.9 kB)
+Collecting editdistpy>=0.1.3 (from symspellpy)
+  Downloading editdistpy-0.1.5-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (7.9 kB)
+Downloading symspellpy-6.7.8-py3-none-any.whl (2.6 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.6/2.6 MB 20.9 MB/s eta 0:00:00
+Downloading editdistpy-0.1.5-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (144 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 144.1/144.1 kB 7.7 MB/s eta 0:00:00
+Installing collected packages: editdistpy, symspellpy
+Successfully installed editdistpy-0.1.5 symspellpy-6.7.8
+
+[ ]
+!pip install symspellpy
+Requirement already satisfied: symspellpy in /usr/local/lib/python3.11/dist-packages (6.7.8)
+Requirement already satisfied: editdistpy>=0.1.3 in /usr/local/lib/python3.11/dist-packages (from symspellpy) (0.1.5)
+
+[ ]
+from symspellpy import SymSpell, Verbosity
+import pkg_resources
+<ipython-input-3-e7d990a773ca>:2: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
+  import pkg_resources
+
+[ ]
+sym_spell = SymSpell(max_dictionary_edit_distance=10, prefix_length=15)
+MIT License
+
+Copyright (c) 2022 mmb L (Python port https://github.com/mammothb/symspellpy) Copyright (c) 2021 Wolf Garbe (Original C# implementation https://github.com/wolfgarbe/SymSpell)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+[ ]
+dictionary_path = pkg_resources.resource_filename("symspellpy", "frequency_dictionary_en_82_765.txt")
+sym_spell.load_dictionary(dictionary_path, term_index=0, count_index=1)
+dictionary_path = pkg_resources.resource_filename("symspellpy", "frequency_bigramdictionary_en_243_342.txt")
+sym_spell.load_bigram_dictionary(dictionary_path, term_index=0, count_index=2)
+True
+
+[ ]
+input_term = "geme"  # The misspelled word
+suggestions = sym_spell.lookup(input_term, Verbosity.CLOSEST, max_edit_distance=2)
+
+for suggestion in suggestions:
+    print(f"Suggestion: {suggestion.term}, Distance: {suggestion.distance}, Count: {suggestion.count}")
+Suggestion: game, Distance: 1, Count: 227111505
+Suggestion: gene, Distance: 1, Count: 34266155
+Suggestion: gem, Distance: 1, Count: 6147908
+Suggestion: gems, Distance: 1, Count: 4520987
+Suggestion: gee, Distance: 1, Count: 2433166
+Suggestion: meme, Distance: 1, Count: 1439956
+Suggestion: gere, Distance: 1, Count: 447230
+Suggestion: deme, Distance: 1, Count: 47517
+
+[ ]
+# Install SymSpellPy
+!pip install symspellpy
+
+# Import necessary libraries
+from symspellpy import SymSpell, Verbosity
+import pkg_resources
+
+# Initialize SymSpell
+max_edit_distance_dictionary = 3
+prefix_length = 7
+sym_spell = SymSpell(max_edit_distance_dictionary, prefix_length)
+
+# Load dictionary
+dictionary_path = pkg_resources.resource_filename("symspellpy", "frequency_dictionary_en_82_765.txt")
+bigram_path = pkg_resources.resource_filename("symspellpy", "frequency_bigramdictionary_en_243_342.txt")
+
+# Term_index is the column of the term and count_index is the column of the term frequency
+if not sym_spell.load_dictionary(dictionary_path, term_index=0, count_index=1):
+    print("Dictionary file not found")
+if not sym_spell.load_bigram_dictionary(bigram_path, term_index=0, count_index=2):
+    print("Bigram dictionary file not found")
+
+# Correct multi-word input
+input_term = ""  # Example sentence with errors
+suggestions = sym_spell.lookup_compound(input_term, max_edit_distance_dictionary)
+
+# Display suggestions
+for suggestion in suggestions:
+    print(f"Suggestion: {suggestion.term}, Edit Distance: {suggestion.distance}, Frequency: {suggestion.count}")
+
+Requirement already satisfied: symspellpy in /usr/local/lib/python3.11/dist-packages (6.7.8)
+Requirement already satisfied: editdistpy>=0.1.3 in /usr/local/lib/python3.11/dist-packages (from symspellpy) (0.1.5)
+Suggestion: , Edit Distance: 0, Frequency: 1024908267229
+
+[ ]
+# Install SymSpellPy
+!pip install symspellpy
+
+# Import necessary libraries
+from symspellpy import SymSpell, Verbosity
+import pkg_resources
+
+# Initialize SymSpell
+max_edit_distance_dictionary = 3
+prefix_length = 7
+sym_spell = SymSpell(max_edit_distance_dictionary, prefix_length)
+
+# Load dictionary
+dictionary_path = pkg_resources.resource_filename("symspellpy", "frequency_dictionary_en_82_765.txt")
+bigram_path = pkg_resources.resource_filename("symspellpy", "frequency_bigramdictionary_en_243_342.txt")
+
+Requirement already satisfied: symspellpy in /usr/local/lib/python3.11/dist-packages (6.7.8)
+Requirement already satisfied: editdistpy>=0.1.3 in /usr/local/lib/python3.11/dist-packages (from symspellpy) (0.1.5)
+
+[ ]
+# Term_index is the column of the term and count_index is the column of the term frequency
+if not sym_spell.load_dictionary(dictionary_path, term_index=0, count_index=1):
+    print("Dictionary file not found")
+if not sym_spell.load_bigram_dictionary(bigram_path, term_index=0, count_index=2):
+    print("Bigram dictionary file not found")
+
+# Function to read lines from a file, append a full stop, and return as a single string
+def read_input_file(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+    # Append a full stop to each line and join them
+    input_text = '. '.join(line.strip() for line in lines if line.strip()) + '.'
+    return input_text
+
+# Read input from a text file
+file_path = '/content/hello.txt'  # Replace with the path to your input file
+input_term = read_input_file(file_path)
+
+# Correct multi-word input
+suggestions = sym_spell.lookup_compound(input_term, max_edit_distance_dictionary)
+
+# Display suggestions
+for suggestion in suggestions:
+    print(f"Suggestion: {suggestion.term}, Edit Distance: {suggestion.distance}, Frequency: {suggestion.count}")
+Suggestion: hello then a for helping me i dent know how to see goodbye, Edit Distance: 11, Frequency: 0
+RoBERTa+GECToR: Final corrective model
+Converting the LANG-8 File from .DAT to .src for compatible usage in the model.
+Both the .DAT and .src have been included in the subfolder: lang8 as part of the pipeline4_NLP folder.
+
+
+[ ]
+# Define the input and output file paths
+input_file_path = '/content/drive/MyDrive/GECTOR/lang8/lang-8-20111007-2.0/lang-8-20111007-L1-v2.dat'
+output_file_path = '/content/drive/MyDrive/GECTOR/lang8/lang-8-20111007-2.0/lang-8-20111007-L1-v2.src'
+
+# Step 1: Read the .DAT file
+with open(input_file_path, 'r') as dat_file:
+    dat_content = dat_file.readlines()
+
+# Step 2: Process the data
+# For example, let's assume we need to convert each line to uppercase
+processed_content = [line.upper() for line in dat_content]
+
+# Step 3: Write to the .SRC file
+with open(output_file_path, 'w') as src_file:
+    src_file.writelines(processed_content)
+
+print(f"Conversion complete. The data has been saved to {output_file_path}")
+
+Conversion complete. The data has been saved to /content/drive/MyDrive/GECTOR/lang8/lang-8-20111007-2.0/lang-8-20111007-L1-v2.src
+Cloning the github repository that houses all the dependencies.
+
+
+[ ]
+# Clone the GECToR repository from GitHub
+!git clone https://github.com/gotutiyan/gector.git
+
+# Change the directory to gector
+%cd gector
+
+# Install required packages from requirements.txt
+!pip install -r requirements.txt
+
+# Install additional required packages
+!pip install transformers torch
+Cloning into 'gector'...
+remote: Enumerating objects: 127, done.
+remote: Counting objects: 100% (127/127), done.
+remote: Compressing objects: 100% (86/86), done.
+remote: Total 127 (delta 69), reused 86 (delta 35), pack-reused 0 (from 0)
+Receiving objects: 100% (127/127), 49.25 KiB | 752.00 KiB/s, done.
+Resolving deltas: 100% (69/69), done.
+/content/gector
+ERROR: Could not open requirements file: [Errno 2] No such file or directory: 'requirements.txt'
+Requirement already satisfied: transformers in /usr/local/lib/python3.11/dist-packages (4.48.3)
+Requirement already satisfied: torch in /usr/local/lib/python3.11/dist-packages (2.5.1+cu124)
+Requirement already satisfied: filelock in /usr/local/lib/python3.11/dist-packages (from transformers) (3.17.0)
+Requirement already satisfied: huggingface-hub<1.0,>=0.24.0 in /usr/local/lib/python3.11/dist-packages (from transformers) (0.28.1)
+Requirement already satisfied: numpy>=1.17 in /usr/local/lib/python3.11/dist-packages (from transformers) (1.26.4)
+Requirement already satisfied: packaging>=20.0 in /usr/local/lib/python3.11/dist-packages (from transformers) (24.2)
+Requirement already satisfied: pyyaml>=5.1 in /usr/local/lib/python3.11/dist-packages (from transformers) (6.0.2)
+Requirement already satisfied: regex!=2019.12.17 in /usr/local/lib/python3.11/dist-packages (from transformers) (2024.11.6)
+Requirement already satisfied: requests in /usr/local/lib/python3.11/dist-packages (from transformers) (2.32.3)
+Requirement already satisfied: tokenizers<0.22,>=0.21 in /usr/local/lib/python3.11/dist-packages (from transformers) (0.21.0)
+Requirement already satisfied: safetensors>=0.4.1 in /usr/local/lib/python3.11/dist-packages (from transformers) (0.5.3)
+Requirement already satisfied: tqdm>=4.27 in /usr/local/lib/python3.11/dist-packages (from transformers) (4.67.1)
+Requirement already satisfied: typing-extensions>=4.8.0 in /usr/local/lib/python3.11/dist-packages (from torch) (4.12.2)
+Requirement already satisfied: networkx in /usr/local/lib/python3.11/dist-packages (from torch) (3.4.2)
+Requirement already satisfied: jinja2 in /usr/local/lib/python3.11/dist-packages (from torch) (3.1.5)
+Requirement already satisfied: fsspec in /usr/local/lib/python3.11/dist-packages (from torch) (2024.10.0)
+Collecting nvidia-cuda-nvrtc-cu12==12.4.127 (from torch)
+  Downloading nvidia_cuda_nvrtc_cu12-12.4.127-py3-none-manylinux2014_x86_64.whl.metadata (1.5 kB)
+Collecting nvidia-cuda-runtime-cu12==12.4.127 (from torch)
+  Downloading nvidia_cuda_runtime_cu12-12.4.127-py3-none-manylinux2014_x86_64.whl.metadata (1.5 kB)
+Collecting nvidia-cuda-cupti-cu12==12.4.127 (from torch)
+  Downloading nvidia_cuda_cupti_cu12-12.4.127-py3-none-manylinux2014_x86_64.whl.metadata (1.6 kB)
+Collecting nvidia-cudnn-cu12==9.1.0.70 (from torch)
+  Downloading nvidia_cudnn_cu12-9.1.0.70-py3-none-manylinux2014_x86_64.whl.metadata (1.6 kB)
+Collecting nvidia-cublas-cu12==12.4.5.8 (from torch)
+  Downloading nvidia_cublas_cu12-12.4.5.8-py3-none-manylinux2014_x86_64.whl.metadata (1.5 kB)
+Collecting nvidia-cufft-cu12==11.2.1.3 (from torch)
+  Downloading nvidia_cufft_cu12-11.2.1.3-py3-none-manylinux2014_x86_64.whl.metadata (1.5 kB)
+Collecting nvidia-curand-cu12==10.3.5.147 (from torch)
+  Downloading nvidia_curand_cu12-10.3.5.147-py3-none-manylinux2014_x86_64.whl.metadata (1.5 kB)
+Collecting nvidia-cusolver-cu12==11.6.1.9 (from torch)
+  Downloading nvidia_cusolver_cu12-11.6.1.9-py3-none-manylinux2014_x86_64.whl.metadata (1.6 kB)
+Collecting nvidia-cusparse-cu12==12.3.1.170 (from torch)
+  Downloading nvidia_cusparse_cu12-12.3.1.170-py3-none-manylinux2014_x86_64.whl.metadata (1.6 kB)
+Requirement already satisfied: nvidia-nccl-cu12==2.21.5 in /usr/local/lib/python3.11/dist-packages (from torch) (2.21.5)
+Requirement already satisfied: nvidia-nvtx-cu12==12.4.127 in /usr/local/lib/python3.11/dist-packages (from torch) (12.4.127)
+Collecting nvidia-nvjitlink-cu12==12.4.127 (from torch)
+  Downloading nvidia_nvjitlink_cu12-12.4.127-py3-none-manylinux2014_x86_64.whl.metadata (1.5 kB)
+Requirement already satisfied: triton==3.1.0 in /usr/local/lib/python3.11/dist-packages (from torch) (3.1.0)
+Requirement already satisfied: sympy==1.13.1 in /usr/local/lib/python3.11/dist-packages (from torch) (1.13.1)
+Requirement already satisfied: mpmath<1.4,>=1.1.0 in /usr/local/lib/python3.11/dist-packages (from sympy==1.13.1->torch) (1.3.0)
+Requirement already satisfied: MarkupSafe>=2.0 in /usr/local/lib/python3.11/dist-packages (from jinja2->torch) (3.0.2)
+Requirement already satisfied: charset-normalizer<4,>=2 in /usr/local/lib/python3.11/dist-packages (from requests->transformers) (3.4.1)
+Requirement already satisfied: idna<4,>=2.5 in /usr/local/lib/python3.11/dist-packages (from requests->transformers) (3.10)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /usr/local/lib/python3.11/dist-packages (from requests->transformers) (2.3.0)
+Requirement already satisfied: certifi>=2017.4.17 in /usr/local/lib/python3.11/dist-packages (from requests->transformers) (2025.1.31)
+Downloading nvidia_cublas_cu12-12.4.5.8-py3-none-manylinux2014_x86_64.whl (363.4 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 363.4/363.4 MB 1.7 MB/s eta 0:00:00
+Downloading nvidia_cuda_cupti_cu12-12.4.127-py3-none-manylinux2014_x86_64.whl (13.8 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 13.8/13.8 MB 65.1 MB/s eta 0:00:00
+Downloading nvidia_cuda_nvrtc_cu12-12.4.127-py3-none-manylinux2014_x86_64.whl (24.6 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 24.6/24.6 MB 36.5 MB/s eta 0:00:00
+Downloading nvidia_cuda_runtime_cu12-12.4.127-py3-none-manylinux2014_x86_64.whl (883 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 883.7/883.7 kB 47.5 MB/s eta 0:00:00
+Downloading nvidia_cudnn_cu12-9.1.0.70-py3-none-manylinux2014_x86_64.whl (664.8 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 664.8/664.8 MB 2.0 MB/s eta 0:00:00
+Downloading nvidia_cufft_cu12-11.2.1.3-py3-none-manylinux2014_x86_64.whl (211.5 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 211.5/211.5 MB 5.6 MB/s eta 0:00:00
+Downloading nvidia_curand_cu12-10.3.5.147-py3-none-manylinux2014_x86_64.whl (56.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 56.3/56.3 MB 14.5 MB/s eta 0:00:00
+Downloading nvidia_cusolver_cu12-11.6.1.9-py3-none-manylinux2014_x86_64.whl (127.9 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 127.9/127.9 MB 7.5 MB/s eta 0:00:00
+Downloading nvidia_cusparse_cu12-12.3.1.170-py3-none-manylinux2014_x86_64.whl (207.5 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 207.5/207.5 MB 6.3 MB/s eta 0:00:00
+Downloading nvidia_nvjitlink_cu12-12.4.127-py3-none-manylinux2014_x86_64.whl (21.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 21.1/21.1 MB 72.0 MB/s eta 0:00:00
+Installing collected packages: nvidia-nvjitlink-cu12, nvidia-curand-cu12, nvidia-cufft-cu12, nvidia-cuda-runtime-cu12, nvidia-cuda-nvrtc-cu12, nvidia-cuda-cupti-cu12, nvidia-cublas-cu12, nvidia-cusparse-cu12, nvidia-cudnn-cu12, nvidia-cusolver-cu12
+  Attempting uninstall: nvidia-nvjitlink-cu12
+    Found existing installation: nvidia-nvjitlink-cu12 12.5.82
+    Uninstalling nvidia-nvjitlink-cu12-12.5.82:
+      Successfully uninstalled nvidia-nvjitlink-cu12-12.5.82
+  Attempting uninstall: nvidia-curand-cu12
+    Found existing installation: nvidia-curand-cu12 10.3.6.82
+    Uninstalling nvidia-curand-cu12-10.3.6.82:
+      Successfully uninstalled nvidia-curand-cu12-10.3.6.82
+  Attempting uninstall: nvidia-cufft-cu12
+    Found existing installation: nvidia-cufft-cu12 11.2.3.61
+    Uninstalling nvidia-cufft-cu12-11.2.3.61:
+      Successfully uninstalled nvidia-cufft-cu12-11.2.3.61
+  Attempting uninstall: nvidia-cuda-runtime-cu12
+    Found existing installation: nvidia-cuda-runtime-cu12 12.5.82
+    Uninstalling nvidia-cuda-runtime-cu12-12.5.82:
+      Successfully uninstalled nvidia-cuda-runtime-cu12-12.5.82
+  Attempting uninstall: nvidia-cuda-nvrtc-cu12
+    Found existing installation: nvidia-cuda-nvrtc-cu12 12.5.82
+    Uninstalling nvidia-cuda-nvrtc-cu12-12.5.82:
+      Successfully uninstalled nvidia-cuda-nvrtc-cu12-12.5.82
+  Attempting uninstall: nvidia-cuda-cupti-cu12
+    Found existing installation: nvidia-cuda-cupti-cu12 12.5.82
+    Uninstalling nvidia-cuda-cupti-cu12-12.5.82:
+      Successfully uninstalled nvidia-cuda-cupti-cu12-12.5.82
+  Attempting uninstall: nvidia-cublas-cu12
+    Found existing installation: nvidia-cublas-cu12 12.5.3.2
+    Uninstalling nvidia-cublas-cu12-12.5.3.2:
+      Successfully uninstalled nvidia-cublas-cu12-12.5.3.2
+  Attempting uninstall: nvidia-cusparse-cu12
+    Found existing installation: nvidia-cusparse-cu12 12.5.1.3
+    Uninstalling nvidia-cusparse-cu12-12.5.1.3:
+      Successfully uninstalled nvidia-cusparse-cu12-12.5.1.3
+  Attempting uninstall: nvidia-cudnn-cu12
+    Found existing installation: nvidia-cudnn-cu12 9.3.0.75
+    Uninstalling nvidia-cudnn-cu12-9.3.0.75:
+      Successfully uninstalled nvidia-cudnn-cu12-9.3.0.75
+  Attempting uninstall: nvidia-cusolver-cu12
+    Found existing installation: nvidia-cusolver-cu12 11.6.3.83
+    Uninstalling nvidia-cusolver-cu12-11.6.3.83:
+      Successfully uninstalled nvidia-cusolver-cu12-11.6.3.83
+Successfully installed nvidia-cublas-cu12-12.4.5.8 nvidia-cuda-cupti-cu12-12.4.127 nvidia-cuda-nvrtc-cu12-12.4.127 nvidia-cuda-runtime-cu12-12.4.127 nvidia-cudnn-cu12-9.1.0.70 nvidia-cufft-cu12-11.2.1.3 nvidia-curand-cu12-10.3.5.147 nvidia-cusolver-cu12-11.6.1.9 nvidia-cusparse-cu12-12.3.1.170 nvidia-nvjitlink-cu12-12.4.127
+
+[ ]
+!git clone https://github.com/grammarly/gector.git
+%cd /content/gector1
+!git clone https://github.com/cofe-ai/fast-gector.git
+%cd /content/fastgector
+fatal: destination path 'gector' already exists and is not an empty directory.
+[Errno 20] Not a directory: '/content/gector1'
+/content/gector
+fatal: destination path 'fast-gector' already exists and is not an empty directory.
+[Errno 20] Not a directory: '/content/fastgector'
+/content/gector
+Installing Transformers to run RoBERTa and GECToR
+
+
+[ ]
+# Install required packages
+!pip install transformers
+
+# Import necessary libraries
+from transformers import AutoTokenizer
+from gector.gector.modeling import GECToR
+from gector.gector.predict import predict, load_verb_dict
+import torch
+
+#The GECToR model was finally cloned through https://huggingface.co/gotutiyan/gector-roberta-base-5k which matched the latest installation dependencies. As the original github repository was built in 2020, a lot of their installations were outdated, thus causing extreme trouble trying to run the model, as per their instructions, on Colab.
+
+import os
+
+# Define the multi-sentence and paragraph text input
+text_input = """I Like to play with my Fred his name is trivrr.
+Me and trivrr Like play Bikag tag.
+my Brevr like to play with us."""
+
+# Define the directory and file name
+directory = "/content/texts"
+file_name = "output.txt"
+file_path = os.path.join(directory, file_name)
+
+# Create the directory if it doesn't exist
+os.makedirs(directory, exist_ok=True)
+
+# Open the file in write mode and write the text
+with open(file_path, "w") as file:
+    file.write(text_input)
+
+print(f"The text has been saved to {file_path}")
+
+# Function to read lines from a file and return them as a list
+def read_input_file(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+    # Strip leading/trailing whitespace and filter out empty lines
+    srcs = [line.strip() for line in lines if line.strip()]
+    return srcs
+
+# Load the GECToR model and tokenizer
+model_id = 'gotutiyan/gector-roberta-large-5k'
+model = GECToR.from_pretrained(model_id)
+
+# Check if CUDA is available and use it if possible
+if torch.cuda.is_available():
+    model.cuda()
+
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+
+# Load verb dictionary
+encode, decode = load_verb_dict('/content/fast-gector/data/verb-form-vocab.txt')
+
+# Read source sentences from a text file
+file_path = '/content/texts/output.txt'
+srcs = read_input_file(file_path)
+
+# Predict corrections
+corrected = predict(
+    model, tokenizer, srcs,
+    encode, decode,
+    keep_confidence=0.7,
+    min_error_prob=0.5,
+    n_iteration=7,
+    batch_size=2,
+)
+
+# Print corrected sentences
+for sentence in corrected:
+    print(sentence)
